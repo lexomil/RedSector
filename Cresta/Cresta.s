@@ -1886,6 +1886,7 @@ CLEnd:
 
 	INCLUDE "Includes/System.s"
 	INCLUDE "Includes/Math.s"
+	INCLUDE "Includes/Sprite.s"
 	INCLUDE "Includes/ModPlayer.s"
 
 	END
