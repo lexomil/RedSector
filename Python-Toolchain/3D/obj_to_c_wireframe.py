@@ -148,6 +148,7 @@ def main():
 		##  Palette
 		fc.write(obj_name_cap + 'ObjectScreen:\n')
 		fc.write('\tdcb.w\t\t 2*' + obj_name_upper +'_NBPOINT\n')
+		fc.write('\n')
 
 	fc.close()
 
