@@ -5,7 +5,7 @@ import ast
 from util import *
 from vector3 import Vector3
 
-scale_factor = 100.0
+scale_factor = 4.0
 
 def parse_obj_vector(_string):
 	_args = _string.split(' ')
@@ -50,6 +50,12 @@ def main():
 	filename_out = 'out/3d_objects.s'
 	fc = codecs.open(filename_out, 'w')
 
+	def write_vect(vec_3, comment_str = None):
+		out_str = '\tdc.w\t\t' + str(int(vec_3.x)) + ',' + str(int(vec_3.y)) + ',' + str(int(vec_3.z))
+		if comment_str is not None:
+			out_str += '\t\t\t\t\t; ' + comment_str
+		fc.write(out_str + '\n') 
+
 	filename_list = get_files_list(folder_in, [".obj"])
 	for filename_in in filename_list:
 		face_list = []
@@ -84,54 +90,64 @@ def main():
 		obj_name = obj_name.replace(' ', '')
 		obj_name = obj_name.replace('-', '_')
 		obj_name = obj_name.lower()
+		obj_name_upper = obj_name.upper()
+		obj_name_cap = obj_name_upper.capitalize()
 
-		##  Creates the H file that lists the vertices
+		##  Object description
 
-		fc.write('#ifndef THREED_OBJECTS\n')
-		fc.write('#define THREED_OBJECTS\n\n')
+		fc.write(';******************************************\n')
+		fc.write(';\t' + obj_name_upper + '\n')
+		fc.write(';******************************************\n\n')
 
-		fc.write('extern const short object_' + obj_name + '_verts[' + str(len(vertex_list) * 3) + '];\n')
-		fc.write('extern const short object_' + obj_name + '_faces[' + str(len(face_list) * 4) + '];\n')
-
-		fc.write('\n#endif\n')
+		fc.write(obj_name_upper + '_NBPOINT\t\t= ' + str(len(vertex_list)) + '\n')
+		fc.write(obj_name_upper + '_NBFACE\t\t= ' + str(len(face_list)) + '\n\n')
 
 		##  Creates the C file that lists the vertices
-		fc.write('/* ' + filename_in + ' */' + '\n')
-		fc.write('/* List of vertices */' + '\n')
-		fc.write('short const object_' + obj_name + '_verts[] =\n')
-		fc.write('{\n')
+		fc.write(obj_name_cap + 'Object:\n')
+		write_vect(Vector3(), 'Rotation angles')
+		write_vect(Vector3(), 'Rotation pivot')
+		write_vect(Vector3(), 'Object translation')
+		fc.write('\tdc.w\t\t' + obj_name_upper + '_NBPOINT' + '\t\t\t\t\t; Vertice count\n')
+		fc.write('\tdc.l\t\t' + obj_name_cap + 'ObjectPoint' + '\t\t\t\t\t; Vertice list\n')
+		fc.write('\tdc.l\t\t' + obj_name_cap + 'ObjectScreen' + '\t\t\t\t\t; Screen coordinates\n')
+		fc.write('\tdc.w\t\t' + obj_name_upper + '_NBFACE' + '\t\t\t\t\t; Faces count\n')
+		fc.write('\tdc.l\t\t' + obj_name_cap + 'ObjectFace' + '\t\t\t\t\t; Faces list\n')
+		fc.write('\tdc.l\t\t' + obj_name_cap + 'ObjectPalette' + '\t\t\t\t\t; Object palette\n')
+
+		fc.write(obj_name_cap + 'BoundingArea:\n')
+		fc.write('\tdc.w\t\t0,0,0,0\t\t\t\t\t; Object bounding box area\n')
 
 		##  Iterate on vertices
+		fc.write(obj_name_cap + 'ObjectPoint:\t\t\t\t\t; X, Y and Z\n')
 		for _vertex in vertex_list:
-			_str_out = str(int(_vertex.x)) + ',\t' + str(int(_vertex.z)) + ',\t' + str(int(_vertex.y * -1.0)) + ','
-			fc.write('\t' + _str_out + '\n')
-
-		_str_out = '};'
-		fc.write(_str_out + '\n')
+			_vertex_tranformed = Vector3(_vertex.x, _vertex.z, _vertex.y * -1.0)
+			write_vect(_vertex_tranformed)
 
 		##  Creates the C file that lists the faces
 
 		##  Iterate on faces
-		fc.write('\n')
-		fc.write('/* List of faces */' + '\n')
-
-		fc.write('short const object_' + obj_name + '_faces[] =\n')
-		fc.write('{\n')
+		fc.write(obj_name_cap + 'ObjectFace:\t\t\t\t\t; Color, Vertex 1, 2, 3\n')
 
 		for _face in face_list:
-			_str_out = '\t'
+			_str_out = ''
 
 			corner_idx = 0
+			color_idx = 0
+			_str_out += str(color_idx) + ','
 			for _corners in _face:
 				_str_out += str(_corners['vertex'])
 				corner_idx += 1
 				_str_out += ','
 
-			fc.write(_str_out + '\n')
+			fc.write('\tdc.w\t\t' + _str_out + '\n')
 
-		_str_out = '};'
-		fc.write(_str_out + '\n')
-		fc.write('\n')
+		##  Palette
+		fc.write(obj_name_cap + 'ObjectPalette:\n')
+		fc.write('\tdc.w\t\t$444,$888,$ddd,$fff\n')
+
+		##  Palette
+		fc.write(obj_name_cap + 'ObjectScreen:\n')
+		fc.write('\tdcb.w\t\t 2*' + obj_name_upper +'_NBPOINT\n')
 
 	fc.close()
 
